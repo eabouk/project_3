@@ -54,29 +54,25 @@ except:
 
 # Define your function get_user_tweets here:
 def get_user_tweets(user):
-	twenty_tweets = api.user_timeline(user)
 
-	if twenty_tweets not in CACHE_DICTION.values():
+	if user not in CACHE_DICTION:
+		twenty_tweets = api.user_timeline(user)
 		CACHE_DICTION[user] = twenty_tweets
 		f = open(CACHE_FNAME, 'w')
 		f.write(json.dumps(CACHE_DICTION))
 		f.close()
+		return twenty_tweets
 
-	if twenty_tweets in CACHE_DICTION.values():
-		return CACHE_DICTION[user] 
-	# for thing in twenty_tweets:
-	# 	print ("ONE!!!!")
+	else:
+		twenty_tweets = CACHE_DICTION[user]
+		return twenty_tweets
 
-	return twenty_tweets
+	#return twenty_tweets
 
 
 
 # Write an invocation to the function for the "umich" user timeline and save the result in a variable called umich_tweets:
 umich_tweets = get_user_tweets("umich")
-#print(umich_tweets)
-# for tweet in umich_tweets:
-# 	print("ONE TWEET", tweet)
-
 
 ## Task 2 - Creating database and loading data into database
 
@@ -114,21 +110,25 @@ cur.execute(statement)
 # The umich user, and all of the data about users that are mentioned in the umich timeline. 
 # NOTE: For example, if the user with the "TedXUM" screen name is mentioned in the umich timeline, that Twitter user's info should 
 ## be in the Users table, etc.
-statement = 'INSERT INTO Tweets VALUES(?,?,?,?)'
-null = []
+statement = 'INSERT OR IGNORE INTO Users VALUES(?,?,?,?)'
+
 user_id = []
 screen_name = []
 num_favs = []
 description = []
 
-none = None 
 for tweet in umich_tweets:
-	#null.append(none)
-	user_id.append(tweet['entities']['user_mentions']['id_str'])
-	screen_name.append(tweet['entities']['user_mentions']['screen_name'])
-	num_favs.append(api.favorites(screen_name[-1]))
-	description.append(api.get_user(tweet['entities']['user_mentions']['screen_name']))
-#FINISH THIS. 
+	for person in tweet['entities']['user_mentions']:
+
+		user_id.append(person['id_str'])
+		screen_name.append(person['screen_name'])
+		temp = api.favorites(person['screen_name'])
+		num_favs.append(len(temp))
+		temp2 = api.get_user(person['screen_name'])
+		description.append(temp2['description'])
+for thing in num_favs:
+	print ("API FAVORITES", thing)
+# #FINISH THIS. 
 user_keys = zip(user_id, screen_name, num_favs, description)
 
 user_keys_ls = []
@@ -136,24 +136,21 @@ for tweet_tup in user_keys:
 	user_keys_ls.append(tweet_tup)
 
 for tup in user_keys_ls:
+	#print (tup)
 	cur.execute(statement, tup)
 conn.commit()
 
 ## You should load into the Tweets table: 
 # Info about all the tweets (at least 20) that you gather from the umich timeline.
 # NOTE: Be careful that you have the correct user ID reference in the user_id column! See below hints.
-statement = 'INSERT INTO Tweets VALUES(?, ?, ?, ?, ?)'
-null =[]
+statement = 'INSERT OR IGNORE INTO Tweets VALUES(?, ?, ?, ?, ?)'
 tweet_id = []
 tweet_text = []
 user_id = []
 time_posted = []
 retweets = []
 
-none = None 
 for tweet in umich_tweets:
-	null.append(none)
-	#did not use a null thing in the table... check on this 
 	tweet_id.append(tweet['id_str'])
 	tweet_text.append(tweet['text'])
 	user_id.append(tweet['user']['id_str'])
@@ -167,6 +164,7 @@ for thing in tweet_keys:
 	tweet_value_ls.append(thing)
 
 for thing in tweet_value_ls:
+	print(thing)
 	cur.execute(statement, thing)
 conn.commit()
 ## HINT: There's a Tweepy method to get user info that we've looked at before, so when you have a user id or screenname you can 
