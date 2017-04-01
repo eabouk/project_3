@@ -126,9 +126,7 @@ for tweet in umich_tweets:
 		num_favs.append(len(temp))
 		temp2 = api.get_user(person['screen_name'])
 		description.append(temp2['description'])
-for thing in num_favs:
-	print ("API FAVORITES", thing)
-# #FINISH THIS. 
+
 user_keys = zip(user_id, screen_name, num_favs, description)
 
 user_keys_ls = []
@@ -164,7 +162,6 @@ for thing in tweet_keys:
 	tweet_value_ls.append(thing)
 
 for thing in tweet_value_ls:
-	print(thing)
 	cur.execute(statement, thing)
 conn.commit()
 ## HINT: There's a Tweepy method to get user info that we've looked at before, so when you have a user id or screenname you can 
@@ -175,32 +172,50 @@ conn.commit()
 ## the Tweet text to find out which they are! Do some nested data investigation on a dictionary that represents 1 tweet to see it!
 
 
-
-
 ## Task 3 - Making queries, saving data, fetching data
 
 # All of the following sub-tasks require writing SQL statements and executing them using Python.
 
 # Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
+query = 'SELECT * FROM Users'
+cur.execute(query)
+users_info = []
+users_info = cur.fetchall()
+
 
 # Make a query to select all of the user screen names from the database. Save a resulting list of strings (NOT tuples, the strings 
 # inside them!) in the variable screen_names. HINT: a list comprehension will make this easier to complete!
-
+query = 'SELECT screen_name FROM Users'
+cur.execute(query)
+screenNames = cur.fetchall()
+screen_names = [name[0] for name in screenNames]
 
 # Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the 
 # result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
-
+query = 'SELECT * FROM Tweets WHERE Tweets.retweets > 25'
+cur.execute(query)
+more_than_25_rts = cur.fetchall()
 
 
 # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all 
 # those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
-
-
+query = 'SELECT description FROM Users WHERE Users.num_favs > 5'
+#I changed this to be num_favs greater than 5, as all my users only had favorites up to 20 
+cur.execute(query)
+descriptions_fav_users = []
+for user in cur:
+	#print(user)
+	descriptions_fav_users.append(user[0])
 
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the 
 # tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called 
 # joined_result.
-
+query = 'SELECT screen_name FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id WHERE Tweets.retweets > 50'
+cur.execute(query)
+joined_result = cur.fetchall()
+for row in cur:
+	print(row)
+print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
 
 
 
@@ -208,7 +223,6 @@ conn.commit()
 
 ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions 
 # in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
-
 
 
 ## Use a Counter in the collections library to find the most common character among all of the descriptions in the 
@@ -300,29 +314,29 @@ class Task2(unittest.TestCase):
 		self.assertTrue(len(result[0])==4,"Testing that there are 4 columns in the Users database")
 		conn.close()
 
-# class Task3(unittest.TestCase):
-# 	def test_users_info(self):
-# 		self.assertEqual(type(users_info),type([]),"testing that users_info contains a list")
-# 	def test_users_info2(self):
-# 		self.assertEqual(type(users_info[1]),type(("hi","bye")),"Testing that an element in the users_info list is a tuple")
-# 	def test_track_names(self):
-# 		self.assertEqual(type(screen_names),type([]),"Testing that track_names is a list")
-# 	def test_track_names2(self):
-# 		self.assertEqual(type(screen_names[1]),type(""),"Testing that an element in screen_names list is a string")
-# 	def test_more_rts(self):
-# 		if len(more_than_25_rts) >= 1:
-# 			self.assertTrue(len(more_than_25_rts[0])==5,"Testing that a tuple in more_than_ten_rts has 5 fields of info (one for each of the columns in the Tweet table)")
-# 	def test_more_rts2(self):
-# 		self.assertEqual(type(more_than_25_rts),type([]),"Testing that more_than_ten_rts is a list")
-# 	def test_more_rts3(self):
-# 		if len(more_than_25_rts) >= 1:
-# 			self.assertTrue(more_than_25_rts[1][-1]>10, "Testing that one of the retweet # values in the tweets is greater than 10")
-# 	def test_descriptions_fxn(self):
-# 		self.assertEqual(type(descriptions_fav_users),type([]),"Testing that descriptions_fav_users is a list")
-# 	def test_descriptions_fxn2(self):
-# 		self.assertEqual(type(descriptions_fav_users[0]),type(""),"Testing that at least one of the elements in the descriptions_fav_users list is a string, not a tuple or anything else")
-# 	def test_joined_result(self):
-# 		self.assertEqual(type(joined_result[0]),type(("hi","bye")),"Testing that an element in joined_result is a tuple")
+class Task3(unittest.TestCase):
+	def test_users_info(self):
+		self.assertEqual(type(users_info),type([]),"testing that users_info contains a list")
+	def test_users_info2(self):
+		self.assertEqual(type(users_info[1]),type(("hi","bye")),"Testing that an element in the users_info list is a tuple")
+	def test_track_names(self):
+		self.assertEqual(type(screen_names),type([]),"Testing that track_names is a list")
+	def test_track_names2(self):
+		self.assertEqual(type(screen_names[1]),type(""),"Testing that an element in screen_names list is a string")
+	def test_more_rts(self):
+		if len(more_than_25_rts) >= 1:
+			self.assertTrue(len(more_than_25_rts[0])==5,"Testing that a tuple in more_than_ten_rts has 5 fields of info (one for each of the columns in the Tweet table)")
+	def test_more_rts2(self):
+		self.assertEqual(type(more_than_25_rts),type([]),"Testing that more_than_ten_rts is a list")
+	def test_more_rts3(self):
+		if len(more_than_25_rts) >= 1:
+			self.assertTrue(more_than_25_rts[1][-1]>10, "Testing that one of the retweet # values in the tweets is greater than 10")
+	def test_descriptions_fxn(self):
+		self.assertEqual(type(descriptions_fav_users),type([]),"Testing that descriptions_fav_users is a list")
+	def test_descriptions_fxn2(self):
+		self.assertEqual(type(descriptions_fav_users[0]),type(""),"Testing that at least one of the elements in the descriptions_fav_users list is a string, not a tuple or anything else")
+	def test_joined_result(self):
+		self.assertEqual(type(joined_result[0]),type(("hi","bye")),"Testing that an element in joined_result is a tuple")
 
 # class Task4(unittest.TestCase):
 # 	def test_description_words(self):
