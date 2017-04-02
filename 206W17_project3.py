@@ -14,6 +14,7 @@ import twitter_info # same deal as always...
 import json
 import sqlite3
 
+
 ## Your name: Emma Aboukasm
 ## The names of anyone you worked with on this project: No one
 
@@ -69,6 +70,17 @@ def get_user_tweets(user):
 
 	#return twenty_tweets
 
+def get_user_info(user):
+	if user not in CACHE_DICTION: 
+		user_info = api.get_user(user)
+		f = open(CACHE_FNAME, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+		return user_info
+	else: 
+		user_info = CACHE_DICTION[user]
+		return user_info
+
 
 
 # Write an invocation to the function for the "umich" user timeline and save the result in a variable called umich_tweets:
@@ -119,12 +131,11 @@ description = []
 
 for tweet in umich_tweets:
 	for person in tweet['entities']['user_mentions']:
-
 		user_id.append(person['id_str'])
 		screen_name.append(person['screen_name'])
-		temp = api.favorites(person['screen_name'])
-		num_favs.append(len(temp))
-		temp2 = api.get_user(person['screen_name'])
+		temp = get_user_info(person['screen_name'])
+		num_favs.append(temp['favourites_count'])
+		temp2 = get_user_info(person['screen_name'])
 		description.append(temp2['description'])
 
 user_keys = zip(user_id, screen_name, num_favs, description)
@@ -206,16 +217,17 @@ descriptions_fav_users = []
 for user in cur:
 	#print(user)
 	descriptions_fav_users.append(user[0])
+#print ("PRINTING DESCRIPTION", descriptions_fav_users)
 
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the 
 # tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called 
 # joined_result.
-query = 'SELECT screen_name FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id WHERE Tweets.retweets > 50'
+query = 'SELECT screen_name, Tweets.tweet_text FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id WHERE Tweets.retweets > 50'
 cur.execute(query)
 joined_result = cur.fetchall()
 for row in cur:
 	print(row)
-print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
+#print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
 
 
 
@@ -223,25 +235,48 @@ print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
 
 ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions 
 # in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
-
+list_of_words = []
+for line in descriptions_fav_users:
+	word = line.split()
+	for item in word:
+		list_of_words.append(item)
+# print ("PRINTING LIST OF WORDS",list_of_words, len(list_of_words))
+description_words = {thing for thing in list_of_words}
+print("PRINTING DESCRIPTION WORDS", description_words, len(description_words))
 
 ## Use a Counter in the collections library to find the most common character among all of the descriptions in the 
 # descriptions_fav_users list. Save that most common character in a variable called most_common_char. Break any tie alphabetically 
 # (but using a Counter will do a lot of work for you...).
+list_of_chars = []
+i = 0
+for word in list_of_words:
+	for letter in word:
+		list_of_chars.append(letter)
 
+# print ("printing list of chars",list_of_chars)
 
+most_common_char = []
+char_things = collections.Counter(list_of_chars)
+most_common = char_things.most_common()
+one, two = most_common[0]
+most_common_char = one
+# print ("MOST COMMON CHAR", most_common_char)
 
 ## Putting it all together...
 # Write code to create a dictionary whose keys are Twitter screen names and whose associated values are lists of tweet texts that 
 # that user posted. You may need to make additional queries to your database! To do this, you can use, and must use at least one 
 # of: the DefaultDict container in the collections library, a dictionary comprehension, list comprehension(s). Y
 # You should save the final dictionary in a variable called twitter_info_diction.
-
-
+twitter_info_diction = {}
+statement = 'SELECT screen_name, Tweets.tweet_text FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id'
+cur.execute(statement)
+list_tups = cur.fetchall()
+twitter_info_diction = collections.defaultdict()
+for x, y in list_tups:
+	twitter_info_diction[x] = [y]
 
 ### IMPORTANT: MAKE SURE TO CLOSE YOUR DATABASE CONNECTION AT THE END OF THE FILE HERE SO YOU DO NOT LOCK YOUR DATABASE 
 ### (it's fixable, but it's a pain). ###
-
 
 ###### TESTS APPEAR BELOW THIS LINE ######
 ###### Note that the tests are necessary to pass, but not sufficient -- must make sure you've followed the instructions accurately! ######
@@ -338,22 +373,22 @@ class Task3(unittest.TestCase):
 	def test_joined_result(self):
 		self.assertEqual(type(joined_result[0]),type(("hi","bye")),"Testing that an element in joined_result is a tuple")
 
-# class Task4(unittest.TestCase):
-# 	def test_description_words(self):
-# 		print("To help test, description words looks like:", description_words)
-# 		self.assertEqual(type(description_words),type({"hi","Bye"}),"Testing that description words is a set")
-# 	def test_common_char(self):
-# 		self.assertEqual(type(most_common_char),type(""),"Testing that most_common_char is a string")
-# 	def test_common_char2(self):
-# 		self.assertTrue(len(most_common_char)==1,"Testing that most common char is a string of only 1 character")
-# 	def test_twitter_info_diction(self):
-# 		self.assertEqual(type(twitter_info_diction),type({"hi":3}))
-# 	def test_twitter_info_diction2(self):
-# 		self.assertEqual(type(list(twitter_info_diction.keys())[0]),type(""),"Testing that a key of the dictionary is a string")
-# 	def test_twitter_info_diction3(self):
-# 		self.assertEqual(type(list(twitter_info_diction.values())[0]),type([]),"Testing that a value in the dictionary is a list")
-# 	def test_twitter_info_diction4(self):
-# 		self.assertEqual(type(list(twitter_info_diction.values())[0][0]),type(""),"Testing that a single value inside one of those list values-in-dictionary is a string! (See instructions!)")
+class Task4(unittest.TestCase):
+	def test_description_words(self):
+		print("To help test, description words looks like:", description_words)
+		self.assertEqual(type(description_words),type({"hi","Bye"}),"Testing that description words is a set")
+	def test_common_char(self):
+		self.assertEqual(type(most_common_char),type(""),"Testing that most_common_char is a string")
+	def test_common_char2(self):
+		self.assertTrue(len(most_common_char)==1,"Testing that most common char is a string of only 1 character")
+	def test_twitter_info_diction(self):
+		self.assertEqual(type(twitter_info_diction),type({"hi":3}))
+	def test_twitter_info_diction2(self):
+		self.assertEqual(type(list(twitter_info_diction.keys())[0]),type(""),"Testing that a key of the dictionary is a string")
+	def test_twitter_info_diction3(self):
+		self.assertEqual(type(list(twitter_info_diction.values())[0]),type([]),"Testing that a value in the dictionary is a list")
+	def test_twitter_info_diction4(self):
+		self.assertEqual(type(list(twitter_info_diction.values())[0][0]),type(""),"Testing that a single value inside one of those list values-in-dictionary is a string! (See instructions!)")
 
 
 if __name__ == "__main__":
