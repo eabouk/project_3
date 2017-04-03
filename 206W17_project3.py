@@ -222,12 +222,11 @@ for user in cur:
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the 
 # tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called 
 # joined_result.
-query = 'SELECT screen_name, Tweets.tweet_text FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id WHERE Tweets.retweets > 50'
+query = 'SELECT Users.screen_name, Tweets.tweet_text FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id WHERE Tweets.retweets > 10'
 cur.execute(query)
 joined_result = cur.fetchall()
-for row in cur:
-	print(row)
-#print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
+
+print(type(joined_result), "PRINTING JOINED RESULT", joined_result)
 
 
 
@@ -271,7 +270,7 @@ twitter_info_diction = {}
 statement = 'SELECT screen_name, Tweets.tweet_text FROM Users INNER JOIN Tweets ON Users.user_id = Tweets.user_id'
 cur.execute(statement)
 list_tups = cur.fetchall()
-twitter_info_diction = collections.defaultdict()
+twitter_info_diction = {}
 for x, y in list_tups:
 	twitter_info_diction[x] = [y]
 
